@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+venv/
+.venv/
+env/
+
+# Environment & secrets
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Output (generated at runtime)
+output/
+
+# Node modules (Ganache)
+node_modules/
+
+# Compiled contracts
+compiled_contracts/
+verifier_abi.json
+
+# Model cache
+*.pkl
