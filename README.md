@@ -1,87 +1,238 @@
-# HH GOA 2026 Task 3: Face Identification and Blockchain Verification
+<div align="center">
 
-This project demonstrates a five-step evidence pipeline for Hacker House Goa 2026 Task 3:
+# HACKER HOUSE GOA '26
 
-1. Detect and encode a face from an input image.
-2. Search the cropped face with SerpApi's Google Lens engine.
-3. Canonicalize the runtime result, fingerprint it with SHA-256, and record the fingerprint on Ethereum Sepolia.
-4. Read the exact saved result back and verify it against the on-chain hash.
-5. Modify a copy in memory and demonstrate tamper detection without writing to the blockchain.
+### TASK #3 · FACE IDENTIFICATION & BLOCKCHAIN VERIFICATION
 
-The system stores a compact fingerprint and reference data, not the complete image.
+**FACE → DISCOVERY → PROOF**
 
-## Architecture
+[![HH Goa 2026](https://img.shields.io/badge/HACKER%20HOUSE-GOA%20'26-0B6B3A?style=for-the-badge&labelColor=FFE500)](https://hhgoa.com/)
+[![Open Trial](https://img.shields.io/badge/OPEN%20TRIAL-TASK%20%233-FF2A8A?style=for-the-badge)](https://hhgoa.com/)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-0B6B3A?style=for-the-badge&logo=python&logoColor=FFE500)](https://www.python.org/)
+[![Ethereum Sepolia](https://img.shields.io/badge/BLOCKCHAIN-ETHEREUM%20SEPOLIA-FF2A8A?style=for-the-badge&logo=ethereum&logoColor=F7F0D0)](https://sepolia.etherscan.io/)
 
-```text
-Input image
-  -> DeepFace FaceNet embedding with RetinaFace
-  -> SerpApi Google Lens runtime search
-  -> dynamically selected result
-  -> canonical {url, title, source}
-  -> SHA-256 fingerprint
-  -> Verifier contract on Ethereum Sepolia
-  -> read-back comparison
-  -> in-memory tamper test
-```
+</div>
 
-## Phases
+---
 
-### Phase 1: Face identification
+## THE TASK
 
-`face_module.py` uses DeepFace with the RetinaFace detector and FaceNet embeddings. It handles missing files, unreadable images, and images with no detectable face. It writes diagnostic images under `output/` and returns a deterministic face hash used as the blockchain record identifier.
-
-### Phase 2: Reverse image search
-
-`reverse_search.py` uploads the local crop to SerpApi and uses the Google Lens engine. Results are discovered at runtime. The selected result is never hardcoded or pre-selected by URL. Social results are preferred when present, otherwise the first valid web result is used.
-
-Search results depend on the external SerpApi/Google Lens service. A reverse-image match is evidence of visual similarity or source linkage; it does not establish a person's real-world identity.
-
-### Phase 3: Blockchain storage
-
-`run_phase3.py` takes the runtime `url`, `title`, and `source` fields, applies the shared canonicalization function in `blockchain.py`, and computes a SHA-256 fingerprint. It deploys or uses the `Verifier.sol` contract on Ethereum Sepolia, stores the fingerprint and source URL, waits for confirmation, reads the record back, and writes:
-
-- `output/verification_record.json`: exact canonical data used for hashing
-- `output/blockchain_record.json`: non-secret contract, identifier, transaction, and block metadata
-
-The previous records remain on-chain. A new deployment is used when `CONTRACT_ADDRESS` is blank.
-
-### Phase 4: Verification and tamper detection
-
-`run_phase4.py` reads `output/verification_record.json` rather than performing a new search. It recomputes the hash with the same `get_canonical_hash()` function, reads the specified Sepolia record, and reports `VERIFIED` only when the hashes match. It then changes only the title in an in-memory copy and expects `TAMPERED / NOT VERIFIED`. No tampered value is submitted.
-
-### Phase 5: Demo preparation
-
-`demo.py` is the presentation entry point. Its default mode runs the real pipeline and then verifies the newly created record. Its `--verify-only` mode is read-only and is the recommended mode for repeated demos.
-
-## Technologies
-
-- Python 3.10+
-- DeepFace, FaceNet, RetinaFace
-- OpenCV and Pillow
-- SerpApi Google Lens
-- Web3.py
-- Solidity 0.8.x and `py-solc-x`
-- Ethereum Sepolia testnet
-
-## Project structure
+Build an end-to-end pipeline that takes a face scan, finds matching content on the web/social media, and creates a verifiable, tamper-evident blockchain record.
 
 ```text
-blockchain.py                 Shared hashing, Sepolia, contract, and read/write logic
-face_module.py                Phase 1 face detection and embedding
-reverse_search.py             Phase 2 SerpApi Google Lens search
-run_phase3.py                 Phase 3 runtime record creation
-run_phase4.py                 Phase 4 read-only verification and tamper test
-demo.py                       Presentation entry point
-contracts/Verifier.sol        Minimal on-chain record contract
-test_images/                  Demo and negative test images
-output/                       Ignored runtime artifacts
-requirements.txt              Python dependencies
-.env.example                  Secret-free environment template
+FACE SCAN
+   ↓
+FACE IDENTIFICATION
+   ↓
+REAL WEB / SOCIAL SEARCH
+   ↓
+MATCHING POST
+   ↓
+CANONICAL DATA + SHA-256
+   ↓
+ETHEREUM SEPOLIA
+   ↓
+READ-BACK VERIFICATION
+   ↓
+TAMPER TEST
 ```
 
-## Installation
+The project follows the Task #3 flow: **face scan input → web/social media search → matching post → blockchain upload/verification**.
 
-Create a virtual environment and install the pinned-compatible dependency ranges:
+---
+
+## WHAT I BUILT
+
+### 01 · FACE IDENTIFICATION
+
+**DeepFace + FaceNet + RetinaFace**
+
+- Detects a face from the input image.
+- Generates a FaceNet embedding.
+- Saves a cropped face and annotated image for inspection.
+- Produces a deterministic SHA-256 face hash.
+- Handles missing, unreadable, and face-less inputs.
+
+### 02 · GENUINE REVERSE IMAGE SEARCH
+
+**SerpApi + Google Lens**
+
+The face crop is searched at runtime. The matching result is **not hardcoded**.
+
+- Results are discovered dynamically.
+- Social-media domains are preferred when available.
+- A valid web result is used when no social result is available.
+- The selected result is reduced to canonical `URL + Title + Source` data.
+
+```text
+URL + Title + Source
+        ↓
+Canonical representation
+        ↓
+SHA-256 fingerprint
+```
+
+A reverse-image match is treated as visual/source evidence, not as proof of a person's real-world identity.
+
+### 03 · ON-CHAIN RECORD
+
+**Ethereum Sepolia**
+
+The canonical result is fingerprinted and recorded on-chain.
+
+The stored record is intentionally compact:
+
+- Record identifier
+- SHA-256 fingerprint
+- Source URL
+- Contract address
+- Transaction metadata
+- Block metadata
+
+The complete image is not stored on-chain.
+
+### 04 · READ-BACK VERIFICATION
+
+The saved canonical result is hashed again and compared with the blockchain record.
+
+```text
+LOCAL CANONICAL DATA
+        ↓
+RECOMPUTE HASH
+        ↓
+READ BLOCKCHAIN RECORD
+        ↓
+COMPARE
+        ↓
+VERIFIED / NOT VERIFIED
+```
+
+### 05 · TAMPER DETECTION
+
+A copy of the verified data is changed **only in memory**. The altered fingerprint is then checked against the original on-chain fingerprint.
+
+```text
+ORIGINAL DATA  → VERIFIED
+TAMPERED COPY  → TAMPERED / NOT VERIFIED
+CHAIN          → NOT MODIFIED
+```
+
+No tampered value is submitted to the blockchain.
+
+---
+
+## ARCHITECTURE
+
+```text
+                    ┌──────────────────┐
+                    │    INPUT IMAGE   │
+                    └────────┬─────────┘
+                             │
+                             ▼
+              ┌──────────────────────────┐
+              │ DeepFace / FaceNet       │
+              │ RetinaFace Detection     │
+              └────────────┬─────────────┘
+                           │
+                    Face embedding
+                           │
+                           ▼
+              ┌──────────────────────────┐
+              │ SerpApi / Google Lens    │
+              │ Genuine runtime search   │
+              └────────────┬─────────────┘
+                           │
+                     Matching result
+                           │
+                           ▼
+              ┌──────────────────────────┐
+              │ Canonicalize             │
+              │ URL / Title / Source     │
+              └────────────┬─────────────┘
+                           │
+                         SHA-256
+                           │
+                           ▼
+              ┌──────────────────────────┐
+              │ Ethereum Sepolia         │
+              │ Verifier.sol             │
+              └────────────┬─────────────┘
+                           │
+                     Read exact record
+                           │
+                           ▼
+              ┌──────────────────────────┐
+              │ Verification +           │
+              │ In-memory Tamper Test    │
+              └──────────────────────────┘
+```
+
+---
+
+## WHY THE PIPELINE IS AUDITABLE
+
+| Layer | What happens | Evidence |
+|---|---|---|
+| Face processing | Detect and encode | Face embedding + face hash |
+| Web search | Discover matching content | Runtime Google Lens result |
+| Canonicalization | Define the exact data being verified | URL + title + source |
+| Blockchain | Anchor the fingerprint | Ethereum Sepolia record |
+| Verification | Recompute and compare | Hash comparison |
+| Tamper test | Change a copy and verify failure | In-memory modified record |
+
+---
+
+## TECH STACK
+
+| Technology | Role |
+|---|---|
+| **Python 3.10+** | Pipeline |
+| **DeepFace** | Face processing |
+| **FaceNet** | Face embeddings |
+| **RetinaFace** | Face detection |
+| **OpenCV / Pillow** | Image processing |
+| **SerpApi / Google Lens** | Genuine reverse-image search |
+| **Web3.py** | Ethereum interaction |
+| **Solidity 0.8.x** | Verification contract |
+| **py-solc-x** | Contract compilation |
+| **Ethereum Sepolia** | Public testnet record |
+
+---
+
+## PROJECT STRUCTURE
+
+```text
+task-3/
+├── blockchain.py          # Hashing + Sepolia contract logic
+├── face_module.py         # Face detection and encoding
+├── reverse_search.py      # Google Lens reverse search
+├── run_phase3.py          # Create on-chain record
+├── run_phase4.py          # Verification + tamper test
+├── demo.py                # Integration / presentation entry point
+│
+├── contracts/
+│   └── Verifier.sol       # Minimal verification contract
+│
+├── test_images/           # Demo / negative-test images
+├── requirements.txt
+├── .env.example
+└── README.md
+```
+
+Runtime artifacts in `output/` are intentionally ignored by Git.
+
+---
+
+## RUN LOCALLY
+
+### 1. Clone
+
+```powershell
+git clone https://github.com/codebynv/task-3.git
+cd task-3
+```
+
+### 2. Install
 
 ```powershell
 python -m venv .venv
@@ -89,11 +240,9 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-`py-solc-x` downloads Solidity compiler `0.8.19` on the first blockchain deployment if it is not already installed.
+### 3. Configure
 
-## Environment
-
-Copy `.env.example` to `.env` and fill in local values:
+Copy `.env.example` to `.env`:
 
 ```text
 SERPAPI_API_KEY=
@@ -102,74 +251,78 @@ PRIVATE_KEY=
 CONTRACT_ADDRESS=
 ```
 
-Use a dedicated wallet private key funded only with Sepolia test ETH. Never use mainnet credentials, commit `.env`, print a private key, or print an API key. `.env` is excluded by `.gitignore`.
+Use a dedicated testnet wallet. Never commit `.env`, API keys, private keys, seed phrases, or production credentials.
 
-`CONTRACT_ADDRESS` may be left blank for a new deployment. After a Phase 3 run, the generated `output/blockchain_record.json` contains the actual contract address and identifier for the demo chain.
-
-## Commands
-
-Run the complete live pipeline. This performs a real Google Lens search and real Sepolia transactions, so use it deliberately:
+### 4. Run the live pipeline
 
 ```powershell
 python demo.py test_images/einstein.jpg
 ```
 
-Run Phase 3 directly:
+This performs a genuine Google Lens search and a Sepolia transaction.
 
-```powershell
-python run_phase3.py test_images/einstein.jpg
-```
-
-Verify the latest successful record without a new search or transaction:
-
-```powershell
-python demo.py --verify-only test_images/einstein.jpg --contract 0x2383A3a4801dDfc9befabAE29164fd1e4EFa8697 --identifier 6739e46750097892e3003f1d22e4214fa707494937a201370ecd58dc574907b8
-```
-
-Once `output/blockchain_record.json` exists, the shorter read-only command is:
+### 5. Verify without a new transaction
 
 ```powershell
 python demo.py --verify-only test_images/einstein.jpg
 ```
 
-The image argument is retained for a consistent demo interface; verify-only mode does not process it, search, or write to the chain.
+Verify-only mode is read-only: no new search and no blockchain write.
 
-Run Phase 4 directly:
+---
 
-```powershell
-python run_phase4.py output/verification_record.json <contract_address> <identifier>
-```
+## DEMO RESULT
 
-## Example output
+A successful verification run follows this pattern:
 
 ```text
-========================================
 PHASE 4 - BLOCKCHAIN VERIFICATION
-========================================
+
 Blockchain:
 Ethereum Sepolia
 Chain ID: 11155111
+
 TEST 1 - ORIGINAL DATA
 Result: VERIFIED
+
 TEST 2 - TAMPERED DATA
 Result: TAMPERED / NOT VERIFIED
+
 Blockchain Modified During Phase 4: NO
 Phase 4: PASS
-========================================
 ```
 
-Runtime search titles, URLs, hashes, transaction hashes, blocks, and contract addresses vary by run and are not hardcoded.
+Runtime URLs, hashes, transaction hashes, block numbers, and contract addresses vary by run.
 
-## Limitations and security
+---
 
-- Google Lens and SerpApi results are external and can change between searches.
-- Visual similarity does not prove identity, ownership, authorship, or authenticity.
-- The contract stores a URL and hash but does not validate the external page.
-- The current contract intentionally keeps on-chain data minimal; exact canonical fields are preserved in the ignored local artifact for later verification.
-- Sepolia is a testnet. Transactions are public and irreversible even though the ETH has no production value.
-- Do not expose or commit `SERPAPI_API_KEY`, `PRIVATE_KEY`, RPC credentials, or seed phrases.
-- Generated images, artifacts, ABI files, caches, and local environments are ignored by Git.
+## SECURITY & LIMITATIONS
 
-## Submission status
+- Google Lens / SerpApi results are external and can change between searches.
+- Visual similarity does not prove real-world identity, ownership, authorship, or authenticity.
+- The contract stores a URL and fingerprint; it does not validate the external page.
+- Sepolia is a public testnet. Transactions are public and irreversible.
+- Secrets remain outside Git through `.env` and `.gitignore`.
+- The complete source image is not written to the blockchain.
 
-Phase 1 through Phase 4 have been exercised successfully. Phase 5 provides the final integration wrapper, reproducible setup instructions, read-only verification demo, and submission cleanup for Hacker House Goa 2026 Task 3.
+---
+
+## HH GOA 2026 · OPEN TRIAL
+
+**Task #3 — Face Identification & Blockchain Verification**
+
+This repository contains the implementation, setup instructions, live verification flow, and tamper-detection demonstration for the Open Trial.
+
+The Hacker House Goa 2026 selection framework describes **Proof of building**, **Task performance**, **Clear thinking**, and **Drive to be there** as selection signals. This repository keeps the build and task execution directly inspectable.
+
+---
+
+<div align="center">
+
+### BUILD · SHIP · LAUNCH
+
+**HACKER HOUSE GOA 2026**
+
+[hhgoa.com](https://hhgoa.com/) · [GitHub](https://github.com/codebynv/task-3)
+
+</div>
