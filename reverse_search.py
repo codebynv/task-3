@@ -87,12 +87,16 @@ def _upload_image_to_serpapi(image_path: str, api_key: str) -> str:
 
 
 def _classify_result(url: str) -> dict:
-    """Classify a URL as social media or generic web."""
-    is_social = any(domain in url.lower() for domain in SOCIAL_MEDIA_DOMAINS)
+    """Classify a URL by its parsed hostname, avoiding substring matches."""
     parsed = urlparse(url)
+    hostname = (parsed.hostname or "").lower().rstrip(".")
+    is_social = any(
+        hostname == domain or hostname.endswith(f".{domain}")
+        for domain in SOCIAL_MEDIA_DOMAINS
+    )
     return {
         "is_social_media": is_social,
-        "domain": parsed.netloc,
+        "domain": hostname,
     }
 
 
