@@ -89,7 +89,10 @@ def _upload_image_to_serpapi(image_path: str, api_key: str) -> str:
 def _classify_result(url: str) -> dict:
     """Classify a URL by its parsed hostname, avoiding substring matches."""
     parsed = urlparse(url)
-    hostname = (parsed.hostname or "").lower().rstrip(".")
+    if parsed.scheme.lower() not in ("http", "https") or not parsed.hostname:
+        return {"is_social_media": False, "domain": ""}
+
+    hostname = parsed.hostname.lower().rstrip(".")
     is_social = any(
         hostname == domain or hostname.endswith(f".{domain}")
         for domain in SOCIAL_MEDIA_DOMAINS
