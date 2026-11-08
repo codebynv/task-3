@@ -112,7 +112,7 @@ def deploy_contract(w3, account):
     contract_address = tx_receipt.contractAddress
     
     # Save the ABI for later use
-    with open("verifier_abi.json", "w") as f:
+    with open(os.path.join(os.path.dirname(__file__), "verifier_abi.json"), "w") as f:
         json.dump(abi, f)
         
     return contract_address, abi
@@ -121,7 +121,7 @@ def load_contract(w3, contract_address):
     """Loads an existing deployed contract"""
     # Try to load ABI from file, or compile it
     try:
-        with open("verifier_abi.json", "r") as f:
+        with open(os.path.join(os.path.dirname(__file__), "verifier_abi.json"), "r") as f:
             abi = json.load(f)
     except FileNotFoundError:
         abi, _ = compile_contract()
