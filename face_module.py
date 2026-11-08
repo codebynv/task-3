@@ -108,6 +108,13 @@ def process_face(image_path: str, output_dir: str = "output") -> dict:
         print(f"[ERROR] Face detection/encoding failed: {error_msg}")
         return {"face_found": False, "error": error_msg}
 
+    # Reject invalid detector coordinates before calculating a crop.
+    if fw <= 0 or fh <= 0 or x < 0 or y < 0 or x >= w or y >= h:
+        return {"face_found": False, "error": "Detector returned invalid face coordinates"}
+
+    fw = min(fw, w - x)
+    fh = min(fh, h - y)
+
     # --- Crop and save the face ---
     print(f"\n[3/5] Saving cropped face...")
     os.makedirs(output_dir, exist_ok=True)
